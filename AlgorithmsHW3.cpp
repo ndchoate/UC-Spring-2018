@@ -41,7 +41,7 @@ public:
 	Graph(vector<int> input)
 	{
 		// Assumed: size of input is at least 2 (i.e. at least empty graph)
-		assert(input.size() >= 2);
+		assert(input.size() > 2);
 
 		// Allocate memory for 2D, nxn adjacency matrix
 		// n = input[0], as shown in example for assignment
@@ -82,10 +82,29 @@ public:
 };
 
 // TODO: implement Visit method
-static int Visit(int v)
+static int Visit(Graph G, int v, queue<int> *vertexQueue)
 {
-
+	for (int i = 0; i < G.m_numVertices; i++)
+	{
+		if (G.m_adjacencyMatrix[v][i] == 1)
+		{
+			&vertexQueue.push(i);
+		}
+	}
 }
+
+static int doneVisiting(int[] visited)
+{
+	for (int i = 0; i < visited.size();i++)
+	{
+		if (visited(i) == 0)
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
 
 static void BFS(Graph G, int v)
 {
@@ -98,7 +117,7 @@ static void BFS(Graph G, int v)
 	vertexQueue.push(v);
 	visited[v] = 1;
 	// Need to implement visit
-	Visit(v);
+	Visit(G,v, &vertexQueue);
 	while (!vertexQueue.empty())
 	{
 		int currentVertex = vertexQueue.front();
@@ -140,6 +159,8 @@ int main()
 		}
 		cout << "\n";
 	}
+
+	
 
 	return 0;
 }
