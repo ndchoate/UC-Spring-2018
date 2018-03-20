@@ -124,17 +124,17 @@ static void BFS(Graph G, int v)
 		// Get row for currentVertex in adjacency matrix to check for its
 		// adjacent vertices
 		int* currentVertexMatrixRow = G.m_adjacencyMatrix[currentVertex];
-		for (int i = 0; i < numVertices; i++)
+		for (int vertex = 0; vertex < numVertices; vertex++)
 		{
-			if (currentVertexMatrixRow[i] == 1)
+			if (currentVertexMatrixRow[vertex] == 1)
 			{
 				// This vertex is adjacent, mark it as visited in the array
 				// if it is not already and push onto queue
-				if (visited[i] == 0)
+				if (visited[vertex] == 0)
 				{
-					vertexQueue.push(i);
-					visited[i] = 1;
-					Visit(i, distanceFromV, distance);
+					vertexQueue.push(vertex);
+					visited[vertex] = 1;
+					Visit(vertex, distanceFromV, distance);
 				}
 			}
 		}
