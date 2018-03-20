@@ -82,25 +82,42 @@ public:
 };
 
 // TODO: implement Visit method
-static int Visit(int v)
+static void Visit(int v, int distanceFromV, int* distance)
 {
-
+	// Record distance for current vertex v from the starting vertex
+	distance[v] = distanceFromV;
 }
 
 static void BFS(Graph G, int v)
 {
-	// Init queue of vertices and visited array for each visited vertex
+	// Init queue of vertices
 	queue<int> vertexQueue;
+	
+	// Alloc memory for visted array to keep track of visited vertices and
+	// distance array to keep track of each vertex distance from v
 	int numVertices = G.m_numVertices;
 	int* visited = new int[numVertices];
-	visited = { 0 };
+	int* distance = new int[numVertices];
+	
+	for (int i = 0; i < numVertices; i++)
+	{
+		visited[i] = 0;
+		distance[i] = 0;
+	}
+
+	// distanceFromV is the distance of the current vertex from v, i.e
+	// the iteration we're on in the while loop
+	int distanceFromV = 0;
 
 	vertexQueue.push(v);
 	visited[v] = 1;
 	// Need to implement visit
-	Visit(v);
+	Visit(v, distanceFromV, distance);
 	while (!vertexQueue.empty())
 	{
+		// Increment the iteration number, i.e. distance from starting vertex, v
+		distanceFromV++;
+
 		int currentVertex = vertexQueue.front();
 		vertexQueue.pop();
 
@@ -117,7 +134,7 @@ static void BFS(Graph G, int v)
 				{
 					vertexQueue.push(i);
 					visited[i] = 1;
-					Visit(i);
+					Visit(i, distanceFromV, distance);
 				}
 			}
 		}
@@ -140,6 +157,9 @@ int main()
 		}
 		cout << "\n";
 	}
+
+	// Test with vertex for 0
+	BFS(graph, 0);
 
 	return 0;
 }
