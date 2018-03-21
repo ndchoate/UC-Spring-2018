@@ -73,22 +73,51 @@ public:
 			i = i + 2;	// next edge starts at index after next
 		}
 
+		// Alloc memory for m_distanceMatrix, will be initialized with Diameter function
+		m_distanceMatrix = new int*[n];
+		for (int i = 0; i < n; i++)
+		{
+			m_distanceMatrix[i] = new int[n];
+		}
+
 		m_numVertices = n;
 	}
 
 	// 2D adjacency matrix (i.e. an array of int arrays)
 	int **m_adjacencyMatrix;
+	
+	// 2D distance matrix to keep track of distances between each node
+	int **m_distanceMatrix;
+
 	int m_numVertices;
 };
 
-// TODO: implement Visit method
+// For testing
+static void PrintDistanceMatrix(Graph G)
+{
+	for (int i = 0; i < G.m_numVertices; i++)
+	{
+		for (int j = 0; j < G.m_numVertices; j++)
+		{
+			int current = G.m_distanceMatrix[i][j];
+			cout << current << " ";
+		}
+		cout << "\n";
+	}
+}
+
+// TODO: Probably need to implement this as a method to compute the shortest
+//		path between two vertices. BFS doesn't always find shortest path,
+//		and we want the distances between each vertex to be shortest path
+//		between them for computing the diameter of the graph
 static void Visit(int v, int distanceFromV, int* distance)
 {
 	// Record distance for current vertex v from the starting vertex
 	distance[v] = distanceFromV;
 }
 
-static void BFS(Graph G, int v)
+// Output: Distance array, distance that v is from each other vertex
+static int* BFS(Graph G, int v)
 {
 	// Init queue of vertices
 	queue<int> vertexQueue;
@@ -139,8 +168,68 @@ static void BFS(Graph G, int v)
 			}
 		}
 	}
+
+	return distance;
 }
 
+static void InitDistanceMatrix(Graph G)
+{
+	int numVertices = G.m_numVertices;
+
+	for (int currentVertex = 0; currentVertex < numVertices; currentVertex++)
+	{
+		int *distancesFromCurrent = BFS(G, currentVertex);
+		G.m_distanceMatrix[currentVertex] = distancesFromCurrent;
+	}
+
+	// Validate that the matrix is symmetric with the shortest distances from each
+	// vertex to each other vertex. BFS doesn't always find shortest path.
+	// NOTE: This will probably be unnecessary when we implement Visit to find shortest
+	//		path between two vertices
+	for (int vertex1 = 0; vertex1 < numVertices; vertex1++)
+	{
+		for (int vertex2 = 0; vertex2 < numVertices; vertex2++)
+		{
+			int *distance1 = &G.m_distanceMatrix[vertex1][vertex2];
+			int *distance2 = &G.m_distanceMatrix[vertex2][vertex1];
+
+			// If one distance is less than the other, replace larger one
+			if (distance1 < distance2)
+			{
+				*distance2 = *distance1;
+			}
+			else if (distance2 < distance1)
+			{
+				*distance1 = *distance2;
+			}
+		}
+	}
+}
+
+static int Diameter(Graph G)
+{
+	InitDistanceMatrix(G);
+
+	// TODO: implement if condition for if graph is not connected
+
+	// Find diameter, i.e. max distance between any 2 vertices in graph
+	int diameter = 0;
+	for (int i = 0; i < numVertices; i++)
+	{
+		for (int j = 0; j < numVertices; j++)
+		{
+			if (G.m_distanceMatrix[i][j] > diameter)
+			{
+				diameter = G.m_distanceMatrix[i][j];
+			}
+		}
+	}
+
+	// For testing
+	PrintDistanceMatrix(G);
+
+	return diameter;
+}
 
 int main()
 {
@@ -157,9 +246,12 @@ int main()
 		}
 		cout << "\n";
 	}
+	cout << "\n";
 
 	// Test with vertex for 0
 	BFS(graph, 0);
+
+	Diameter(graph);
 
 	return 0;
 }
