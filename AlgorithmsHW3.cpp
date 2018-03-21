@@ -41,7 +41,7 @@ public:
 	Graph(vector<int> input)
 	{
 		// Assumed: size of input is at least 2 (i.e. at least empty graph)
-		assert(input.size() >= 2);
+		assert(input.size() > 2);
 
 		// Allocate memory for 2D, nxn adjacency matrix
 		// n = input[0], as shown in example for assignment
@@ -92,6 +92,7 @@ public:
 	int m_numVertices;
 };
 
+
 // For testing
 static void PrintDistanceMatrix(Graph G)
 {
@@ -118,6 +119,33 @@ static void Visit(int v, int distanceFromV, int* distance)
 
 // Output: Distance array, distance that v is from each other vertex
 static int* BFS(Graph G, int v)
+=======
+// TODO: implement Visit method
+static int Visit(Graph G, int v, queue<int> *vertexQueue)
+{
+	for (int i = 0; i < G.m_numVertices; i++)
+	{
+		if (G.m_adjacencyMatrix[v][i] == 1)
+		{
+			&vertexQueue.push(i);
+		}
+	}
+}
+
+static int doneVisiting(int[] visited)
+{
+	for (int i = 0; i < visited.size();i++)
+	{
+		if (visited(i) == 0)
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+static void BFS(Graph G, int v)
 {
 	// Init queue of vertices
 	queue<int> vertexQueue;
@@ -141,7 +169,9 @@ static int* BFS(Graph G, int v)
 	vertexQueue.push(v);
 	visited[v] = 1;
 	// Need to implement visit
+
 	Visit(v, distanceFromV, distance);
+
 	while (!vertexQueue.empty())
 	{
 		// Increment the iteration number, i.e. distance from starting vertex, v
@@ -252,6 +282,8 @@ int main()
 	BFS(graph, 0);
 
 	Diameter(graph);
+
+	
 
 	return 0;
 }
