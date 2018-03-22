@@ -40,7 +40,7 @@ public:
 	Graph(vector<int> input)
 	{
 		// Assumed: size of input is at least 2 (i.e. at least empty graph)
-		assert(input.size() >= 2);
+		assert(input.size() > 2);
 
 		// Allocate memory for 2D, nxn adjacency matrix
 		// n = input[0], as shown in example for assignment
@@ -99,6 +99,7 @@ public:
 	int m_numVertices;
 };
 
+
 // For testing
 static void PrintDistanceMatrix(Graph G)
 {
@@ -156,7 +157,9 @@ static int** BFS(Graph G, int v)
 	vertexQueue.push(v);
 	visited[v] = 1;
 	// Need to implement visit
+
 	Visit(v, distanceFromV, distance);
+
 	while (!vertexQueue.empty())
 	{
 		// Increment the iteration number, i.e. distance from starting vertex, v
