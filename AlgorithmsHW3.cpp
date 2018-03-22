@@ -1,9 +1,8 @@
-#include <iostream>
 #include <queue>
-#include <stdio.h>
+#include <set>
+#include <iostream>
 #include <stdlib.h>
 #include <utility>
-#include <vector>
 #include <assert.h>
 
 using namespace std;
@@ -41,7 +40,7 @@ public:
 	Graph(vector<int> input)
 	{
 		// Assumed: size of input is at least 2 (i.e. at least empty graph)
-		assert(input.size() >= 2);
+		assert(input.size() > 2);
 
 		// Allocate memory for 2D, nxn adjacency matrix
 		// n = input[0], as shown in example for assignment
@@ -73,57 +72,200 @@ public:
 			i = i + 2;	// next edge starts at index after next
 		}
 
+		// Alloc memory for m_distanceMatrix, will be initialized with Diameter function
+		m_distanceMatrix = new int*[n];
+		for (int i = 0; i < n; i++)
+		{
+			m_distanceMatrix[i] = new int[n];
+		}
+
+		m_connectedMatrix = new int*[n];
+		for (int i = 0; i < n; i++)
+		{
+			m_connectedMatrix[i] = new int[n];
+		}
+
 		m_numVertices = n;
 	}
 
 	// 2D adjacency matrix (i.e. an array of int arrays)
 	int **m_adjacencyMatrix;
+	
+	// 2D distance matrix to keep track of distances between each node
+	int **m_distanceMatrix;
+
+	int **m_connectedMatrix;
+
 	int m_numVertices;
 };
 
-// TODO: implement Visit method
-static int Visit(int v)
-{
 
+// For testing
+static void PrintDistanceMatrix(Graph G)
+{
+	for (int i = 0; i < G.m_numVertices; i++)
+	{
+		for (int j = 0; j < G.m_numVertices; j++)
+		{
+			int current = G.m_distanceMatrix[i][j];
+			cout << current << " ";
+		}
+		cout << "\n";
+	}
 }
 
-static void BFS(Graph G, int v)
+// TODO: Probably need to implement this as a method to compute the shortest
+//		path between two vertices. BFS doesn't always find shortest path,
+//		and we want the distances between each vertex to be shortest path
+//		between them for computing the diameter of the graph
+static void Visit(int v, int distanceFromV, int* distance)
 {
-	// Init queue of vertices and visited array for each visited vertex
+	// Record distance for current vertex v from the starting vertex
+	distance[v] = distanceFromV;
+}
+
+// Output: Distance array, distance that v is from each other vertex
+static int** BFS(Graph G, int v)
+{
+	// Init queue of vertices
 	queue<int> vertexQueue;
+	
+	// Alloc memory for visted array to keep track of visited vertices and
+	// distance array to keep track of each vertex distance from v
 	int numVertices = G.m_numVertices;
 	int* visited = new int[numVertices];
-	visited = { 0 };
+	int* distance = new int[numVertices];
+
+	int** visitedAndDistance;
+	visitedAndDistance = new int*[2];
+	for (int i = 0; i < numVertices; i++)
+	{
+		visitedAndDistance[i] = new int[numVertices];
+	}
+
+	
+	for (int i = 0; i < numVertices; i++)
+	{
+		visited[i] = 0;
+		distance[i] = 0;
+	}
+
+	// distanceFromV is the distance of the current vertex from v, i.e
+	// the iteration we're on in the while loop
+	int distanceFromV = 0;
 
 	vertexQueue.push(v);
 	visited[v] = 1;
 	// Need to implement visit
-	Visit(v);
+
+	Visit(v, distanceFromV, distance);
+
 	while (!vertexQueue.empty())
 	{
+		// Increment the iteration number, i.e. distance from starting vertex, v
+		distanceFromV++;
+
 		int currentVertex = vertexQueue.front();
 		vertexQueue.pop();
 
 		// Get row for currentVertex in adjacency matrix to check for its
 		// adjacent vertices
 		int* currentVertexMatrixRow = G.m_adjacencyMatrix[currentVertex];
-		for (int i = 0; i < numVertices; i++)
+		for (int vertex = 0; vertex < numVertices; vertex++)
 		{
-			if (currentVertexMatrixRow[i] == 1)
+			if (currentVertexMatrixRow[vertex] == 1)
 			{
 				// This vertex is adjacent, mark it as visited in the array
 				// if it is not already and push onto queue
-				if (visited[i] == 0)
+				if (visited[vertex] == 0)
 				{
-					vertexQueue.push(i);
-					visited[i] = 1;
-					Visit(i);
+					vertexQueue.push(vertex);
+					visited[vertex] = 1;
+					Visit(vertex, distanceFromV, distance);
 				}
+			}
+		}
+	}
+	visitedAndDistance[0] = visited;
+	visitedAndDistance[1] = distance;
+	return visitedAndDistance;
+}
+
+static void InitDistanceMatrix(Graph G)
+{
+	int numVertices = G.m_numVertices;
+
+	for (int currentVertex = 0; currentVertex < numVertices; currentVertex++)
+	{
+		int **visitedAndDistance = BFS(G, currentVertex);
+		int *distancesFromCurrent = visitedAndDistance[1];
+		G.m_distanceMatrix[currentVertex] = distancesFromCurrent;
+	}
+
+	// Validate that the matrix is symmetric with the shortest distances from each
+	// vertex to each other vertex. BFS doesn't always find shortest path.
+	// NOTE: This will probably be unnecessary when we implement Visit to find shortest
+	//		path between two vertices
+	for (int vertex1 = 0; vertex1 < numVertices; vertex1++)
+	{
+		for (int vertex2 = 0; vertex2 < numVertices; vertex2++)
+		{
+			int *distance1 = &G.m_distanceMatrix[vertex1][vertex2];
+			int *distance2 = &G.m_distanceMatrix[vertex2][vertex1];
+
+			// If one distance is less than the other, replace larger one
+			if (*distance1 < *distance2)
+			{
+				*distance2 = *distance1;
+			}
+			else if (*distance2 < *distance1)
+			{
+				*distance1 = *distance2;
 			}
 		}
 	}
 }
 
+static set<int*> Connected(Graph G)
+{
+	int numVertices = G.m_numVertices;
+	set<int*> components;
+
+	for (int i = 0; i < numVertices; i++)
+	{
+		int** visitedAndDistance = BFS(G, i);
+		G.m_connectedMatrix[i] = visitedAndDistance[0];
+		components.insert(visitedAndDistance[0]);
+	}
+
+	return components;
+}
+
+static int Diameter(Graph G)
+{
+	InitDistanceMatrix(G);
+	int numVertices = G.m_numVertices;
+
+	// TODO: implement if condition for if graph is not connected
+
+	// Find diameter, i.e. max distance between any 2 vertices in graph
+	int diameter = 0;
+	for (int i = 0; i < numVertices; i++)
+	{
+		for (int j = 0; j < numVertices; j++)
+		{
+			if (G.m_distanceMatrix[i][j] > diameter)
+			{
+				diameter = G.m_distanceMatrix[i][j];
+			}
+		}
+	}
+
+	// For testing
+	PrintDistanceMatrix(G);
+
+	return diameter;
+}
 
 int main()
 {
@@ -140,6 +282,16 @@ int main()
 		}
 		cout << "\n";
 	}
+	cout << "\n";
+
+	// Test with vertex for 0
+	BFS(graph, 0);
+
+	Diameter(graph);
+
+	vector<int> input2 = { 7, 0, 1, 1, 2, 3, 6, 4, 5, -1 };
+	Graph graph2 = Graph(input2);
+	Connected(graph2);
 
 	return 0;
 }
