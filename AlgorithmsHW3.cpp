@@ -1,9 +1,8 @@
-#include <iostream>
 #include <queue>
-#include <stdio.h>
+#include <set>
+#include <iostream>
 #include <stdlib.h>
 #include <utility>
-#include <vector>
 #include <assert.h>
 
 using namespace std;
@@ -80,6 +79,12 @@ public:
 			m_distanceMatrix[i] = new int[n];
 		}
 
+		m_connectedMatrix = new int*[n];
+		for (int i = 0; i < n; i++)
+		{
+			m_connectedMatrix[i] = new int[n];
+		}
+
 		m_numVertices = n;
 	}
 
@@ -88,6 +93,8 @@ public:
 	
 	// 2D distance matrix to keep track of distances between each node
 	int **m_distanceMatrix;
+
+	int **m_connectedMatrix;
 
 	int m_numVertices;
 };
@@ -117,7 +124,7 @@ static void Visit(int v, int distanceFromV, int* distance)
 }
 
 // Output: Distance array, distance that v is from each other vertex
-static int* BFS(Graph G, int v)
+static int** BFS(Graph G, int v)
 {
 	// Init queue of vertices
 	queue<int> vertexQueue;
@@ -127,6 +134,14 @@ static int* BFS(Graph G, int v)
 	int numVertices = G.m_numVertices;
 	int* visited = new int[numVertices];
 	int* distance = new int[numVertices];
+
+	int** visitedAndDistance;
+	visitedAndDistance = new int*[2];
+	for (int i = 0; i < numVertices; i++)
+	{
+		visitedAndDistance[i] = new int[numVertices];
+	}
+
 	
 	for (int i = 0; i < numVertices; i++)
 	{
@@ -168,8 +183,9 @@ static int* BFS(Graph G, int v)
 			}
 		}
 	}
-
-	return distance;
+	visitedAndDistance[0] = visited;
+	visitedAndDistance[1] = distance;
+	return visitedAndDistance;
 }
 
 static void InitDistanceMatrix(Graph G)
@@ -178,7 +194,8 @@ static void InitDistanceMatrix(Graph G)
 
 	for (int currentVertex = 0; currentVertex < numVertices; currentVertex++)
 	{
-		int *distancesFromCurrent = BFS(G, currentVertex);
+		int **visitedAndDistance = BFS(G, currentVertex);
+		int *distancesFromCurrent = visitedAndDistance[1];
 		G.m_distanceMatrix[currentVertex] = distancesFromCurrent;
 	}
 
@@ -194,11 +211,11 @@ static void InitDistanceMatrix(Graph G)
 			int *distance2 = &G.m_distanceMatrix[vertex2][vertex1];
 
 			// If one distance is less than the other, replace larger one
-			if (distance1 < distance2)
+			if (*distance1 < *distance2)
 			{
 				*distance2 = *distance1;
 			}
-			else if (distance2 < distance1)
+			else if (*distance2 < *distance1)
 			{
 				*distance1 = *distance2;
 			}
@@ -206,9 +223,25 @@ static void InitDistanceMatrix(Graph G)
 	}
 }
 
+static set<int*> Connected(Graph G)
+{
+	int numVertices = G.m_numVertices;
+	set<int*> components;
+
+	for (int i = 0; i < numVertices; i++)
+	{
+		int** visitedAndDistance = BFS(G, i);
+		G.m_connectedMatrix[i] = visitedAndDistance[0];
+		components.insert(visitedAndDistance[0]);
+	}
+
+	return components;
+}
+
 static int Diameter(Graph G)
 {
 	InitDistanceMatrix(G);
+	int numVertices = G.m_numVertices;
 
 	// TODO: implement if condition for if graph is not connected
 
@@ -252,6 +285,10 @@ int main()
 	BFS(graph, 0);
 
 	Diameter(graph);
+
+	vector<int> input2 = { 7, 0, 1, 1, 2, 3, 6, 4, 5, -1 };
+	Graph graph2 = Graph(input2);
+	Connected(graph2);
 
 	return 0;
 }
