@@ -4,36 +4,10 @@
 #include <iostream>
 #include <stdlib.h>
 //#include <utility>
+#include <array>
 #include <assert.h>
 
 using namespace std;
-
-// might not need this
-class Vertex
-{
-public:
-	Vertex(int vertexNum)
-	{
-		m_vertexNum = vertexNum;
-	}
-
-	// Vertex's designated vertex number in Graph
-	int m_vertexNum;
-};
-
-// might not need this
-class Edge
-{
-public:
-	Edge(Vertex vertex1, Vertex vertex2) :
-		m_edge({ vertex1, vertex2 })
-	{
-	}
-
-	// An edge is simply defined as the 2 vertices
-	// that it connects
-	std::pair<Vertex, Vertex> m_edge;
-};
 
 class Graph
 {
@@ -80,12 +54,6 @@ public:
 			m_distanceMatrix[i] = new int[n];
 		}
 
-		/*m_connectedMatrix = new int*[n];
-		for (int i = 0; i < n; i++)
-		{
-			m_connectedMatrix[i] = new int[n];
-		}*/
-
 		m_numVertices = n;
 	}
 
@@ -115,10 +83,7 @@ static void PrintDistanceMatrix(Graph G)
 		cout << "\n";
 	}
 }
-// TODO: Probably need to implement this as a method to compute the shortest
-//		path between two vertices. BFS doesn't always find shortest path,
-//		and we want the distances between each vertex to be shortest path
-//		between them for computing the diameter of the graph
+
 static void Visit(int v, int distanceFromV, int* distance)
 {
 	// Record distance for current vertex v from the starting vertex
@@ -187,73 +152,6 @@ static vector<int*> BFS(Graph G, int v)
 	return visitedAndDistance;
 }
 
-//// Output: Distance array, distance that v is from each other vertex
-//static int** BFS(Graph G, int v)
-//{
-//	// Init queue of vertices
-//	queue<int> vertexQueue;
-//	
-//	// Alloc memory for visted array to keep track of visited vertices and
-//	// distance array to keep track of each vertex distance from v
-//	int numVertices = G.m_numVertices;
-//	int* visited = new int[numVertices];
-//	int* distance = new int[numVertices];
-//
-//	int** visitedAndDistance;
-//	visitedAndDistance = new int*[2];
-//	for (int i = 0; i < numVertices; i++)
-//	{
-//		visitedAndDistance[i] = new int[numVertices];
-//	}
-//
-//	
-//	for (int i = 0; i < numVertices; i++)
-//	{
-//		visited[i] = 0;
-//		distance[i] = 0;
-//	}
-//
-//	// distanceFromV is the distance of the current vertex from v, i.e
-//	// the iteration we're on in the while loop
-//	int distanceFromV = 0;
-//
-//	vertexQueue.push(v);
-//	visited[v] = 1;
-//	// Need to implement visit
-//
-//	Visit(v, distanceFromV, distance);
-//
-//	while (!vertexQueue.empty())
-//	{
-//		// Increment the iteration number, i.e. distance from starting vertex, v
-//		distanceFromV++;
-//
-//		int currentVertex = vertexQueue.front();
-//		vertexQueue.pop();
-//
-//		// Get row for currentVertex in adjacency matrix to check for its
-//		// adjacent vertices
-//		int* currentVertexMatrixRow = G.m_adjacencyMatrix[currentVertex];
-//		for (int vertex = 0; vertex < numVertices; vertex++)
-//		{
-//			if (currentVertexMatrixRow[vertex] == 1)
-//			{
-//				// This vertex is adjacent, mark it as visited in the array
-//				// if it is not already and push onto queue
-//				if (visited[vertex] == 0)
-//				{
-//					vertexQueue.push(vertex);
-//					visited[vertex] = 1;
-//					Visit(vertex, distanceFromV, distance);
-//				}
-//			}
-//		}
-//	}
-//	visitedAndDistance[0] = visited;
-//	visitedAndDistance[1] = distance;
-//	return visitedAndDistance;
-//}
-
 static void InitDistanceMatrix(Graph G)
 {
 	int numVertices = G.m_numVertices;
@@ -291,19 +189,52 @@ static void InitDistanceMatrix(Graph G)
 	}
 }
 
-static set<int*> Connected(Graph G)
+static set<set<int>> Components(Graph G)
 {
 	int numVertices = G.m_numVertices;
-	set<int*> components;
+	vector<vector<int>> components;
+	set<set<int>> componentsSet;
 
 	for (int i = 0; i < numVertices; i++)
 	{
 		vector<int*> visitedAndDistance = BFS(G, i);
-		//G.m_connectedMatrix[i] = visitedAndDistance[0];
-		components.insert(visitedAndDistance[0]);
+		vector<int> visitedArray;
+		for (int j = 0; j < numVertices; j++)
+		{
+			visitedArray.push_back(visitedAndDistance[0][j]);
+		}
+
+		bool foundEqual = false;
+		for (int j = 0; j < components.size(); j++)
+		{
+			if (visitedArray == components[j])
+			{
+				foundEqual = true;
+			}
+		}
+
+		if (!foundEqual)
+		{
+			components.push_back(visitedArray);
+		}
 	}
 
-	return components;
+	for (int i = 0; i < components.size(); i++)
+	{
+		set<int> currentComponent;
+		vector<int> component = components[i];
+		for (int j = 0; j < numVertices; j++)
+		{
+			if (component[j] != 0)
+			{
+				currentComponent.insert(j);
+			}
+		}
+
+		componentsSet.insert(currentComponent);
+	}
+
+	return componentsSet;
 }
 
 static int Diameter(Graph G)
@@ -311,23 +242,32 @@ static int Diameter(Graph G)
 	InitDistanceMatrix(G);
 	int numVertices = G.m_numVertices;
 
-	// TODO: implement if condition for if graph is not connected
-
-	// Find diameter, i.e. max distance between any 2 vertices in graph
+	// Init diameter to 0, if it's empty graph its diameter is 0
 	int diameter = 0;
-	for (int i = 0; i < numVertices; i++)
+
+	set<set<int>> connectedComponents = Components(G);
+	if (connectedComponents.size() == 1)
 	{
-		for (int j = 0; j < numVertices; j++)
+		// Entire graph is connected, find diameter
+		// Find diameter, i.e. max distance between any 2 vertices in graph
+		
+		for (int i = 0; i < numVertices; i++)
 		{
-			if (G.m_distanceMatrix[i][j] > diameter)
+			for (int j = 0; j < numVertices; j++)
 			{
-				diameter = G.m_distanceMatrix[i][j];
+				if (G.m_distanceMatrix[i][j] > diameter)
+				{
+					diameter = G.m_distanceMatrix[i][j];
+				}
 			}
 		}
-	}
 
-	// For testing
-	// PrintDistanceMatrix(G);
+	}
+	else if (connectedComponents.size() > 0)
+	{
+		// Graph components are not connected, diameter is -1
+		diameter = -1;
+	}
 
 	return diameter;
 }
@@ -337,7 +277,7 @@ int main()
 	vector<int> input = { 5, 0, 1, 1, 4, 2, 3, 1, 3, 3, 4, -1 };
 	Graph graph = Graph(input);
 
-	// test adjacency matrix by printing
+	// print adjacency matrix
 	for (int i = 0; i < input[0]; i++)
 	{
 		for (int j = 0; j < input[0]; j++)
@@ -349,14 +289,28 @@ int main()
 	}
 	cout << "\n";
 
-	// Test with vertex for 0
-	BFS(graph, 0);
-
-	Diameter(graph);
-
-	vector<int> input2 = { 7, 0, 1, 1, 2, 3, 6, 4, 5, -1 };
-	Graph graph2 = Graph(input2);
-	Connected(graph2);
+	// print diameter or connected components
+	int diameter = Diameter(graph);
+	if (diameter != -1)
+	{
+		cout << diameter << "\n";
+	}
+	else if (diameter == -1)
+	{
+		set<set<int>> connectedComponents = Components(graph);
+		set<set<int>>::iterator setIt = connectedComponents.begin();
+		for (int i = 0; i < connectedComponents.size(); i++)
+		{
+			setIt++;
+			set<int> temp = *setIt++;
+			set<int>::iterator secondSetIt = temp.begin();
+			for (int j = 0; j < temp.size(); j++)
+			{
+				cout << *secondSetIt << " ";
+			}
+			cout << "\n";
+		}
+	}
 
 	return 0;
 }
