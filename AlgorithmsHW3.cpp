@@ -1,8 +1,9 @@
 #include <queue>
+#include <vector>
 #include <set>
 #include <iostream>
 #include <stdlib.h>
-#include <utility>
+//#include <utility>
 #include <assert.h>
 
 using namespace std;
@@ -79,11 +80,11 @@ public:
 			m_distanceMatrix[i] = new int[n];
 		}
 
-		m_connectedMatrix = new int*[n];
+		/*m_connectedMatrix = new int*[n];
 		for (int i = 0; i < n; i++)
 		{
 			m_connectedMatrix[i] = new int[n];
-		}
+		}*/
 
 		m_numVertices = n;
 	}
@@ -94,7 +95,7 @@ public:
 	// 2D distance matrix to keep track of distances between each node
 	int **m_distanceMatrix;
 
-	int **m_connectedMatrix;
+	//int **m_connectedMatrix;
 
 	int m_numVertices;
 };
@@ -103,6 +104,7 @@ public:
 // For testing
 static void PrintDistanceMatrix(Graph G)
 {
+	int num = G.m_numVertices;
 	for (int i = 0; i < G.m_numVertices; i++)
 	{
 		for (int j = 0; j < G.m_numVertices; j++)
@@ -113,7 +115,6 @@ static void PrintDistanceMatrix(Graph G)
 		cout << "\n";
 	}
 }
-
 // TODO: Probably need to implement this as a method to compute the shortest
 //		path between two vertices. BFS doesn't always find shortest path,
 //		and we want the distances between each vertex to be shortest path
@@ -125,25 +126,20 @@ static void Visit(int v, int distanceFromV, int* distance)
 }
 
 // Output: Distance array, distance that v is from each other vertex
-static int** BFS(Graph G, int v)
+static vector<int*> BFS(Graph G, int v)
 {
 	// Init queue of vertices
 	queue<int> vertexQueue;
-	
+
 	// Alloc memory for visted array to keep track of visited vertices and
 	// distance array to keep track of each vertex distance from v
 	int numVertices = G.m_numVertices;
 	int* visited = new int[numVertices];
 	int* distance = new int[numVertices];
 
-	int** visitedAndDistance;
-	visitedAndDistance = new int*[2];
-	for (int i = 0; i < numVertices; i++)
-	{
-		visitedAndDistance[i] = new int[numVertices];
-	}
+	vector<int*> visitedAndDistance;
 
-	
+
 	for (int i = 0; i < numVertices; i++)
 	{
 		visited[i] = 0;
@@ -186,10 +182,77 @@ static int** BFS(Graph G, int v)
 			}
 		}
 	}
-	visitedAndDistance[0] = visited;
-	visitedAndDistance[1] = distance;
+	visitedAndDistance.push_back(visited);
+	visitedAndDistance.push_back(distance);
 	return visitedAndDistance;
 }
+
+//// Output: Distance array, distance that v is from each other vertex
+//static int** BFS(Graph G, int v)
+//{
+//	// Init queue of vertices
+//	queue<int> vertexQueue;
+//	
+//	// Alloc memory for visted array to keep track of visited vertices and
+//	// distance array to keep track of each vertex distance from v
+//	int numVertices = G.m_numVertices;
+//	int* visited = new int[numVertices];
+//	int* distance = new int[numVertices];
+//
+//	int** visitedAndDistance;
+//	visitedAndDistance = new int*[2];
+//	for (int i = 0; i < numVertices; i++)
+//	{
+//		visitedAndDistance[i] = new int[numVertices];
+//	}
+//
+//	
+//	for (int i = 0; i < numVertices; i++)
+//	{
+//		visited[i] = 0;
+//		distance[i] = 0;
+//	}
+//
+//	// distanceFromV is the distance of the current vertex from v, i.e
+//	// the iteration we're on in the while loop
+//	int distanceFromV = 0;
+//
+//	vertexQueue.push(v);
+//	visited[v] = 1;
+//	// Need to implement visit
+//
+//	Visit(v, distanceFromV, distance);
+//
+//	while (!vertexQueue.empty())
+//	{
+//		// Increment the iteration number, i.e. distance from starting vertex, v
+//		distanceFromV++;
+//
+//		int currentVertex = vertexQueue.front();
+//		vertexQueue.pop();
+//
+//		// Get row for currentVertex in adjacency matrix to check for its
+//		// adjacent vertices
+//		int* currentVertexMatrixRow = G.m_adjacencyMatrix[currentVertex];
+//		for (int vertex = 0; vertex < numVertices; vertex++)
+//		{
+//			if (currentVertexMatrixRow[vertex] == 1)
+//			{
+//				// This vertex is adjacent, mark it as visited in the array
+//				// if it is not already and push onto queue
+//				if (visited[vertex] == 0)
+//				{
+//					vertexQueue.push(vertex);
+//					visited[vertex] = 1;
+//					Visit(vertex, distanceFromV, distance);
+//				}
+//			}
+//		}
+//	}
+//	visitedAndDistance[0] = visited;
+//	visitedAndDistance[1] = distance;
+//	return visitedAndDistance;
+//}
 
 static void InitDistanceMatrix(Graph G)
 {
@@ -197,7 +260,7 @@ static void InitDistanceMatrix(Graph G)
 
 	for (int currentVertex = 0; currentVertex < numVertices; currentVertex++)
 	{
-		int **visitedAndDistance = BFS(G, currentVertex);
+		vector<int*> visitedAndDistance = BFS(G, currentVertex);
 		int *distancesFromCurrent = visitedAndDistance[1];
 		G.m_distanceMatrix[currentVertex] = distancesFromCurrent;
 	}
@@ -210,17 +273,19 @@ static void InitDistanceMatrix(Graph G)
 	{
 		for (int vertex2 = 0; vertex2 < numVertices; vertex2++)
 		{
-			int *distance1 = &G.m_distanceMatrix[vertex1][vertex2];
-			int *distance2 = &G.m_distanceMatrix[vertex2][vertex1];
+			int distance1 = G.m_distanceMatrix[vertex1][vertex2];
+			int distance2 = G.m_distanceMatrix[vertex2][vertex1];
 
 			// If one distance is less than the other, replace larger one
-			if (*distance1 < *distance2)
+			if (distance1 < distance2)
 			{
-				*distance2 = *distance1;
+				G.m_distanceMatrix[vertex2][vertex1] = distance1;
+				// distance2 = distance1;
 			}
-			else if (*distance2 < *distance1)
+			else if (distance2 < distance1)
 			{
-				*distance1 = *distance2;
+				G.m_distanceMatrix[vertex1][vertex2] = distance2;
+				// distance1 = distance2;
 			}
 		}
 	}
@@ -233,8 +298,8 @@ static set<int*> Connected(Graph G)
 
 	for (int i = 0; i < numVertices; i++)
 	{
-		int** visitedAndDistance = BFS(G, i);
-		G.m_connectedMatrix[i] = visitedAndDistance[0];
+		vector<int*> visitedAndDistance = BFS(G, i);
+		//G.m_connectedMatrix[i] = visitedAndDistance[0];
 		components.insert(visitedAndDistance[0]);
 	}
 
@@ -262,7 +327,7 @@ static int Diameter(Graph G)
 	}
 
 	// For testing
-	PrintDistanceMatrix(G);
+	// PrintDistanceMatrix(G);
 
 	return diameter;
 }
